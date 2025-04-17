@@ -485,22 +485,22 @@
 
             // Add weather layers
             const weatherLayers = {
-                'Clouds': L.tileLayer('proxy.php?endpoint=map/clouds_new/{z}/{x}/{y}&city=' + city, {
+                'Clouds': L.tileLayer('https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=' + API_KEY, {
                     maxZoom: 19,
                     attribution: '© OpenWeatherMap',
                     opacity: 0.7
                 }),
-                'Precipitation': L.tileLayer('proxy.php?endpoint=map/precipitation_new/{z}/{x}/{y}&city=' + city, {
+                'Precipitation': L.tileLayer('https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=' + API_KEY, {
                     maxZoom: 19,
                     attribution: '© OpenWeatherMap',
                     opacity: 0.7
                 }),
-                'Temperature': L.tileLayer('proxy.php?endpoint=map/temp_new/{z}/{x}/{y}&city=' + city, {
+                'Temperature': L.tileLayer('https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=' + API_KEY, {
                     maxZoom: 19,
                     attribution: '© OpenWeatherMap',
                     opacity: 0.7
                 }),
-                'Wind': L.tileLayer('proxy.php?endpoint=map/wind_new/{z}/{x}/{y}&city=' + city, {
+                'Wind': L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=' + API_KEY, {
                     maxZoom: 19,
                     attribution: '© OpenWeatherMap',
                     opacity: 0.7
@@ -556,8 +556,8 @@
         });
 
         async function getWeather(city) {
-            const currentWeatherUrl = `proxy.php?endpoint=weather&city=${city}&units=metric`;
-            const forecastUrl = `proxy.php?endpoint=forecast&city=${city}&units=metric`;
+            const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+            const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`;
 
             try {
                 const [currentResponse, forecastResponse] = await Promise.all([
