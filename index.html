@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast - API Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="80" cy="20" r="10" fill="%23ffffff" opacity="0.3"/><circle cx="20" cy="30" r="15" fill="%23ffffff" opacity="0.3"/><circle cx="50" cy="10" r="8" fill="%23ffffff" opacity="0.3"/></svg>') repeat;
+            opacity: 0.1;
+            z-index: 0;
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 100px 100px;
+            }
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: containerFloat 6s ease-in-out infinite;
+            transition: all 0.3s ease;
+        }
+
+        .container.has-data {
+            max-width: 1200px;
+        }
+
+        .weather-display {
+            display: none;
+        }
+
+        .container.has-data .weather-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+            margin-top: 20px;
+        }
+
+        .weather-content {
+            grid-column: 1;
+            width: 100%;
+        }
+
+        .map-section {
+            grid-column: 2;
+            width: 100%;
+            height: 100%;
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .map-section h3 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes containerFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .description {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 30px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        #weatherForm {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        #cityInput {
+            flex: 1;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+            color: #333;
+        }
+
+        #cityInput:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        button {
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1e90ff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+        }
+
+        #weather {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        #weather h2 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #weather p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 8px 0;
+            font-size: 1.1em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .weather-card h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 8px;
+        }
+
+        .weather-card p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 8px 0;
+            font-size: 1em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 1400px) {
+            .container.has-data {
+                max-width: 1000px;
+            }
+            
+            .container.has-data .weather-display {
+                grid-template-columns: 1fr;
+            }
+            
+            .map-section {
+                grid-column: 1;
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+                padding-left: 0;
+                padding-top: 20px;
+                margin-top: 20px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .container.has-data {
+                max-width: 800px;
+            }
+            
+            .weather-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .forecast-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container.has-data {
+                max-width: 600px;
+            }
+            
+            .weather-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .forecast-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            #weatherForm {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+            
+            .forecast-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .forecast-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .forecast-section h3 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+        }
+
+        .forecast-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .forecast-card h4 {
+            color: white;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .forecast-card img {
+            width: 50px;
+            height: 50px;
+            margin: 5px 0;
+        }
+
+        .forecast-card p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .share-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+        }
+
+        .share-button.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .share-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .share-button svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .share-tooltip {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .share-button:hover .share-tooltip {
+            opacity: 1;
+        }
+
+        #weatherMap {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            flex: 1;
+        }
+
+        .leaflet-container {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .leaflet-tile {
+            filter: brightness(0.8) contrast(1.2) !important;
+        }
+
+        .leaflet-control-container {
+            display: block !important;
+        }
+
+        .leaflet-control-layers {
+            background: rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+        }
+
+        .leaflet-control-layers label {
+            color: white !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .leaflet-control-layers input[type="radio"] {
+            margin-right: 5px !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="share-button" id="shareButton">
+            <span class="share-tooltip">Copy link to clipboard</span>
+            <svg viewBox="0 0 24 24">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+            </svg>
+            Share
+        </button>
+        <h1>Weather Forecast</h1>
+        <p class="description">Enter a city name to get the weather forecast</p>
+
+        <form id="weatherForm">
+            <input type="text" id="cityInput" placeholder="Enter city name" required>
+            <button type="submit">Get Forecast</button>
+        </form>
+
+        <div id="weather"></div>
+    </div>
+
+    <!-- Add Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="config.js"></script>
+
+    <script>
+        let map = null;
+        let marker = null;
+
+        // Function to initialize map
+        function initMap(lat, lon) {
+            console.log('Initializing map with coordinates:', lat, lon);
+            
+            if (map) {
+                console.log('Removing existing map');
+                map.remove();
+            }
+            
+            // Create map container if it doesn't exist
+            let mapContainer = document.getElementById('weatherMap');
+            if (!mapContainer) {
+                console.log('Creating map container');
+                mapContainer = document.createElement('div');
+                mapContainer.id = 'weatherMap';
+                document.querySelector('.map-section').appendChild(mapContainer);
+            }
+            
+            console.log('Creating Leaflet map');
+            map = L.map('weatherMap').setView([lat, lon], 6);
+            
+            // Add base map layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add weather layers
+            const weatherLayers = {
+                'Clouds': L.tileLayer('proxy.php?endpoint=map/clouds_new/{z}/{x}/{y}&city=' + city, {
+                    maxZoom: 19,
+                    attribution: '© OpenWeatherMap',
+                    opacity: 0.7
+                }),
+                'Precipitation': L.tileLayer('proxy.php?endpoint=map/precipitation_new/{z}/{x}/{y}&city=' + city, {
+                    maxZoom: 19,
+                    attribution: '© OpenWeatherMap',
+                    opacity: 0.7
+                }),
+                'Temperature': L.tileLayer('proxy.php?endpoint=map/temp_new/{z}/{x}/{y}&city=' + city, {
+                    maxZoom: 19,
+                    attribution: '© OpenWeatherMap',
+                    opacity: 0.7
+                }),
+                'Wind': L.tileLayer('proxy.php?endpoint=map/wind_new/{z}/{x}/{y}&city=' + city, {
+                    maxZoom: 19,
+                    attribution: '© OpenWeatherMap',
+                    opacity: 0.7
+                })
+            };
+
+            // Add layer control
+            L.control.layers(null, weatherLayers, {
+                position: 'topright',
+                collapsed: false
+            }).addTo(map);
+
+            // Add default weather layer
+            weatherLayers['Clouds'].addTo(map);
+
+            // Add marker for the location
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker([lat, lon]).addTo(map);
+            
+            console.log('Map initialization complete');
+        }
+
+        // Function to get URL parameters
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Function to update URL with new location
+        function updateUrlWithLocation(city) {
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('city', city);
+            window.history.pushState({}, '', newUrl);
+        }
+
+        // Function to handle form submission
+        document.getElementById('weatherForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const city = document.getElementById('cityInput').value;
+            updateUrlWithLocation(city);
+            getWeather(city);
+        });
+
+        // Check for location in URL on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const cityFromUrl = getUrlParameter('city');
+            if (cityFromUrl) {
+                document.getElementById('cityInput').value = cityFromUrl;
+                getWeather(cityFromUrl);
+            }
+        });
+
+        async function getWeather(city) {
+            const currentWeatherUrl = `proxy.php?endpoint=weather&city=${city}&units=metric`;
+            const forecastUrl = `proxy.php?endpoint=forecast&city=${city}&units=metric`;
+
+            try {
+                const [currentResponse, forecastResponse] = await Promise.all([
+                    fetch(currentWeatherUrl),
+                    fetch(forecastUrl)
+                ]);
+                
+                const currentData = await currentResponse.json();
+                const forecastData = await forecastResponse.json();
+
+                if (currentData.cod === 200 && forecastData.cod === "200") {
+                    console.log('Weather data received:', currentData);
+                    const weatherDiv = document.getElementById('weather');
+                    const container = document.querySelector('.container');
+                    const shareButton = document.getElementById('shareButton');
+                    container.classList.add('has-data');
+                    weatherDiv.style.display = 'block';
+                    shareButton.classList.add('visible');
+
+                    // Group forecast data by day
+                    const dailyForecasts = {};
+                    forecastData.list.forEach(item => {
+                        const date = new Date(item.dt * 1000);
+                        const day = date.toLocaleDateString('en-US', { weekday: 'long' });
+                        if (!dailyForecasts[day]) {
+                            dailyForecasts[day] = {
+                                temps: [],
+                                descriptions: [],
+                                icons: []
+                            };
+                        }
+                        dailyForecasts[day].temps.push(item.main.temp);
+                        dailyForecasts[day].descriptions.push(item.weather[0].description);
+                        dailyForecasts[day].icons.push(item.weather[0].icon);
+                    });
+
+                    // Calculate daily averages
+                    const forecastHTML = Object.entries(dailyForecasts).map(([day, data]) => {
+                        const avgTemp = (data.temps.reduce((a, b) => a + b, 0) / data.temps.length).toFixed(1);
+                        const mostCommonDesc = data.descriptions.reduce((a, b) => 
+                            (a[data.descriptions.filter(v => v === b).length] = b, a), {})[Object.keys(data.descriptions).length];
+                        const icon = data.icons[0];
+                        
+                        return `
+                            <div class="forecast-card">
+                                <h4>${day}</h4>
+                                <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${mostCommonDesc}">
+                                <p>${avgTemp}°C</p>
+                                <p>${mostCommonDesc}</p>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Create the complete weather display structure
+                    weatherDiv.innerHTML = `
+                        <div class="weather-display">
+                            <div class="weather-content">
+                                <h2>Weather in ${currentData.name}</h2>
+                                <div class="weather-grid">
+                                    <div class="weather-card">
+                                        <h3>Current Conditions</h3>
+                                        <p>Temperature: ${currentData.main.temp}°C</p>
+                                        <p>Feels Like: ${currentData.main.feels_like}°C</p>
+                                        <p>Weather: ${currentData.weather[0].description}</p>
+                                        <p>Humidity: ${currentData.main.humidity}%</p>
+                                    </div>
+                                    <div class="weather-card">
+                                        <h3>Wind & Pressure</h3>
+                                        <p>Wind Speed: ${currentData.wind.speed} m/s</p>
+                                        <p>Wind Direction: ${currentData.wind.deg}°</p>
+                                        <p>Pressure: ${currentData.main.pressure} hPa</p>
+                                        <p>Visibility: ${currentData.visibility / 1000} km</p>
+                                    </div>
+                                    <div class="weather-card">
+                                        <h3>Temperature Range</h3>
+                                        <p>Min: ${currentData.main.temp_min}°C</p>
+                                        <p>Max: ${currentData.main.temp_max}°C</p>
+                                        <p>Sunrise: ${new Date(currentData.sys.sunrise * 1000).toLocaleTimeString()}</p>
+                                        <p>Sunset: ${new Date(currentData.sys.sunset * 1000).toLocaleTimeString()}</p>
+                                    </div>
+                                </div>
+                                <div class="forecast-section">
+                                    <h3>5-Day Forecast</h3>
+                                    <div class="forecast-grid">
+                                        ${forecastHTML}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="map-section">
+                                <h3>Weather Map</h3>
+                                <div id="weatherMap"></div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Initialize map with the location coordinates
+                    initMap(currentData.coord.lat, currentData.coord.lon);
+                } else {
+                    const weatherDiv = document.getElementById('weather');
+                    weatherDiv.style.display = 'block';
+                    weatherDiv.innerHTML = `<p>${currentData.message || 'Could not retrieve weather data'}</p>`;
+                }
+            } catch (error) {
+                const weatherDiv = document.getElementById('weather');
+                weatherDiv.style.display = 'block';
+                weatherDiv.innerHTML = `<p>Could not retrieve weather data. Please try again later.</p>`;
+            }
+        }
+
+        // Share button functionality
+        document.getElementById('shareButton').addEventListener('click', function() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                const tooltip = this.querySelector('.share-tooltip');
+                tooltip.textContent = 'Link copied!';
+                setTimeout(() => {
+                    tooltip.textContent = 'Copy link to clipboard';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy URL: ', err);
+            });
+        });
+    </script>
+</body>
+</html>
