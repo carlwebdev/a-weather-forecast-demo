@@ -1,1 +1,4 @@
 # Remove config.js from .gitignore to allow it to be tracked 
+
+# Ignore _old folder
+_old/ 
